@@ -36,6 +36,7 @@ template<typename Key, typename Model>
 struct TypeExtractor<Key Model::*> {
   // Alias template to get hold of the Model type
   using Model_t = Model;
+  // using Key_t = Key;
   // Alias template to get hold of the Key type
   using Key_t = std::decay_t<
     std::invoke_result_t<Key Model::*, Model>
@@ -150,7 +151,10 @@ int main() {
   using UniquePersonIndex = Index<&Person::firstName, &Person::lastName, &Person::age>;
   static_assert(std::is_same_v<std::tuple<std::string, std::string, int>, UniquePersonIndex::Key>);
 
+  using MemberFunctionIndex = Index<&Person::fullName>;
+
   Person alice{"Alice", "Hargreaves", 2018 - 1852};
 
   std::cout << "Alice is now " << PersonIndexByAge::extractKey(alice) << " years old.\n";
+  std::cout << "Alice's full name is " << MemberFunctionIndex::extractKey(alice) << "\n";
 }
