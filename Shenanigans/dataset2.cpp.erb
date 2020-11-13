@@ -1,0 +1,37 @@
+/*
+#include <array>
+
+template<int ... IDS>
+using IdSequence = std::integer_sequence<int, IDS...>;
+
+template<int ... IDS>
+constexpr bool areAllUnique(IdSequence<IDS...>) {
+  std::array arr{IDS...};
+  for (int i = 0; i < arr.size() - 1; ++i) {
+    for (int j = i + 1; j < arr.size(); ++j) {
+      if (arr[i] == arr[j]) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+*/
+#include <tuple>
+
+#if defined(METABENCH)
+//static_assert(areAllUnique(IdSequence<
+//  <%= (1..n).to_a.reverse.join(', ') %>
+//>{}));
+
+//static_assert(!areAllUnique(IdSequence<
+//  <%= (1..n).to_a.reverse.join(', ') %>, 2
+//>{}));
+static auto tup1 = std::make_tuple(
+  <%= (1..n).to_a.reverse.join(', ') %>
+);
+#endif
+
+int main() {
+  return 0;
+}

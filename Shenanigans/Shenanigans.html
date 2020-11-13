@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>Template Shenanigans</title>
+
+  <meta name="description" content="Testing, debugging and benchmarking template code">
+  <meta name="author" content="Jonathan O'Connor">
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="dist/reset.css">
+  <link rel="stylesheet" href="dist/reveal.css">
+  <link rel="stylesheet" href="dist/theme/black.css" id="theme">
+
+  <!-- Theme used for syntax highlighting of code -->
+  <link rel="stylesheet" href="plugin/highlight/zenburn.css" id="highlight-theme">
+</head>
+<body>
+<div class="reveal">
+  <section class="slides">
+    <section>
+      <h3>Template Shenanigans</h3>
+      <h4>Developing template code</h4>
+      <aside class="notes">
+        <ul>
+          <li>Fascinated by meta-programming</li>
+          <li>Read lots of books and watched lots of talks</li>
+          <li>C++ Templates has 11 pages out of 800</li>
+          <li>But few of them offer tips on how to develop that code</li>
+          <li>Lead in to Alpacas </li>
+        </ul>
+      </aside>
+    </section>
+
+    <section>
+      <img class="r-stretch" src="img/alpacas_compiling.jpg">
+    </section>
+
+    <section>
+      <section>
+        <h2>Agenda</h2>
+        <ul>
+          <li class="fragment">Compiling</li>
+          <li class="fragment fade-in">Debugging</li>
+          <li class="fragment fade-in">Testing</li>
+          <li class="fragment fade-in">Benchmarking</li>
+        </ul>
+        <aside class="notes">
+          <ul>
+            <li>The coding lifecycle</li>
+            <li>Getting the blasted code to compile</li>
+            <li>Debugging and testing can be in a loop</li>
+            <li>Benchmarking is making it lean and clean</li>
+          </ul>
+        </aside>
+      </section>
+
+      <section>
+        <h2>Who am I?</h2>
+        <ul>
+          <li>Jonathan O'Connor he/him</li>
+          <li>I develop code for The Cluster Company GmbH</li>
+          <li>C++20 in-memory database</li>
+          <li>Metaprogramming in Basic, Lisp, C++, Java and Ruby since 1983</li>
+          <li>Chess, making ice cream</li>
+          <li>github/ninkibah, @ninkibah</li>
+        </ul>
+      </section>
+    </section>
+
+
+    <section>
+      <section>
+        <img class="r-stretch" src="img/alpacas_compiling.jpg">
+        <aside class="notes">
+          <p>This is what alpacas do waiting for the compile to finish</p>
+        </aside>
+      </section>
+
+      <section>
+        <h2>Agenda</h2>
+        <ul>
+          <li class="currentSection">Compiling</li>
+          <li>Debugging</li>
+          <li>Testing</li>
+          <li>Benchmarking</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Error messages</h2>
+        <ul>
+          <li>Famous for being long</li>
+          <li>Too many messages</li>
+        </ul>
+        <aside class="notes">
+          <ul>
+            <li>Timur mentioned the long compiler errors</li>
+            <li>Does anyone ever scroll to the right?</li>
+          </ul>
+        </aside>
+      </section>
+      <section data-auto-animate>
+        <h2 data-id="code-title">Error messages</h2>
+        <pre data-id="code-animation">
+          <code class="cpp" data-trim data-line-numbers="">
+            #include &lt;set&gt;
+            void main() {
+              std::set&lt;int&gt; uniqueInts;
+              uniqueInts.insert(42);
+            }
+          </code>
+        </pre>
+        <aside class="notes">
+          <p>I sucked up John Lakos's cool-aid</p>
+        </aside>
+      </section>
+      <section data-auto-animate>
+        <h2 data-id="code-title">Error messages</h2>
+        <pre data-id="code-animation">
+          <code class="cpp" data-trim data-line-numbers="3">
+            #include &lt;set&gt;
+            void main() {
+              std::set&lt;int, std::allocator&lt;int&gt;&gt; uniqueInts;
+              uniqueInts.insert(42);
+            }
+          </code>
+        </pre>
+      </section>
+      <section>
+        <h2 data-id="code-title">Error messages</h2>
+        <img class="r-stretch" src="img/ErrorMessages.png">
+        <aside class="notes">
+          <ul>
+            <li>My mind shuts down</li>
+            <li>It's overloaded</li>
+            <li>Take a deep breath</li>
+            <li>Read the error messages</li>
+          </ul>
+        </aside>
+      </section>
+
+      <section>
+        <h2 data-id="code-title">Read to the end</h2>
+        <pre data-id="code-animation">
+          <code class="cpp" data-trim data-line-numbers="4-9 | 7">
+            std::pair&lt;std::_Rb_tree_node_base*, std::_Rb_tree_node_base*&gt;
+            std::_Rb_tree&lt;_Key, _Val, _KeyOfValue, _Compare, _Alloc&gt;::
+              _M_get_insert_unique_pos(const key_type&)
+            [with _Key = int;
+             _Val = int;
+             _KeyOfValue = std::_Identity&lt;int&gt;;
+             _Compare = std::allocator&lt;int&gt;;
+             _Alloc = std::allocator&lt;int&gt;;
+             std::_Rb_tree&lt;_Key, _Val, _KeyOfValue, _Compare, _Alloc&gt;::key_type = int]
+          </code>
+        </pre>
+      </section>
+
+      <section>
+        <h2 data-id="code-title">Format the error message</h2>
+        <ul>
+          <li>Suggested by Ben Deane</li>
+          <li>He uses ClangFormat</li>
+          <li>Copy declaration to cpp file</li>
+          <li>Format the copied text</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 data-id="code-title">Format the error message</h2>
+        <pre data-id="code-animation">
+          <code class="cpp" data-trim data-line-numbers="">
+            std::pair&lt;typename std::_Rb_tree&lt;_Key, _Key, std::_Identity&lt;_Tp&gt;, _Compare,
+                                     typename __gnu_cxx::__alloc_traits&lt;_Alloc&gt;::
+                                 rebind&lt;_Key&gt;::other&gt;::const_iterator,
+                      bool&gt;
+            std::set&lt;_Key, _Compare, _Alloc&gt;::insert(
+                std::set&lt;_Key, _Compare, _Alloc&gt;::value_type &&);
+          </code>
+        </pre>
+      </section>
+
+      <section>
+        <h2 data-id="code-title">Simplify the error message</h2>
+        <ul>
+          <li>https://github.com/SuperV1234/camomilla</li>
+          <li>Python3 script from Vittorio Romeo</li>
+          <li>Replaces namespaces and generic templates with shorter versions.</li>
+          <li>Can't replace std::basic_string&lt;char&gt; with string</li>
+        </ul>
+      </section>
+      <section>
+        <h2 data-id="code-title">Simplify the error message</h2>
+        <pre>
+          <code class="bash" data-trim data-line-numbers="1 | 2 | 4">
+            $ echo "metavector&lt;metatype&lt;metawhatever&lt;int&gt;&gt;&gt;::x()" \
+              | camomilla -d0
+            # outputs
+            metavector&lt;?&gt;::x()
+          </code>
+        </pre>
+      </section>
+
+      <section>
+        <h2 data-id="code-title">Simplify the error message</h2>
+        <pre>
+          <code class="bash" data-trim data-line-numbers="1 | 2| 4">
+            $ echo "std::vector&lt;std::pair&lt;std::int16_t, std::int32_t&gt;&gt;" \
+              | camomilla --depth=100
+            # outputs
+            vector&lt;pair&lt;int16_t, int32_t&gt;&gt;
+          </code>
+        </pre>
+      </section>
+    </section>
+
+
+    <section>
+      <section>
+        <img class="r-stretch" src="img/alpacas1.jpg">
+      </section>
+
+      <section>
+        <h2>Agenda</h2>
+        <ul>
+          <li>Compiling</li>
+          <li class="currentSection">Debugging</li>
+          <li>Testing</li>
+          <li>Benchmarking</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Template debugging</h2>
+        <ul>
+          <li class="fragment">Using the normal debugger</li>
+          <li class="fragment fade-in">Printing a type name</li>
+          <li class="fragment fade-in">Template Instantiation tools</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Constexpr function debugging</h2>
+        <img class="r-stretch" src="img/gdb-under-clion.png">
+      </section>
+
+      <section>
+        <h2>What type do I have?</h2>
+        <ul>
+          <li class="fragment">Can I use typeid(T).name()?</li>
+          <li class="fragment fade-in">??? NSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE</li>
+          <li class="fragment fade-in">__FUNCTION__</li>
+          <li class="fragment fade-in">doesn't show templated arguments</li>
+          <li class="fragment fade-in">__PRETTY_FUNCTION__</li>
+          <li class="fragment fade-in">works on gcc and clang, but not MSVC</li>
+        </ul>
+      </section>
+
+      <section data-auto-animate>
+        <h2 data-id="code-title">__PRETTY_FUNCTION__</h2>
+        <pre data-id="code-animation"><code class="cpp" data-trim data-line-numbers="1-3">
+        void print_me(int) {
+          cout << __PRETTY_FUNCTION__ '\n';
+        }
+        </code>
+        </pre>
+        <p class="fragment fade-in">void print_me(int)</p>
+      </section>
+
+      <section data-auto-animate>
+        <h2 data-id="code-title">__PRETTY_FUNCTION__</h2>
+        <pre data-id="code-animation"><code class="cpp" data-trim data-line-numbers="1-4 | 5">
+        template&lt;typename T&gt;
+        void print_me(T* = nullptr) {
+          cout << __PRETTY_FUNCTION__ '\n';
+        }
+        print_me&lt;int&gt;();
+        </code></pre>
+        <p class="fragment fade-in">void print_me(T *) [with T = int]</p>
+        <aside class="notes">
+          Originally I didn't have any parameters to the function, but Clang
+          won't print that then
+        </aside>
+      </section>
+
+      <section>
+        <h2>function to print the type</h2>
+        <pre data-id="code-animation"><code class="cpp" data-trim data-line-numbers="3 | 4 | 5-7 |8">
+        template&lt;typename T&gt;
+        auto name_of_T(T* = nullptr) {
+          std::string pretty_func = __PRETTY_FUNCTION__;
+          auto pos = pretty_func.find('=');
+          if (pos == std::string::npos) {
+              return pretty_func;
+          }
+          return pretty_func.substr(pos + 2, pretty_func.length() - pos - 3);
+        }
+        </code></pre>
+      </section>
+
+      <section>
+        <h2>function to print the type</h2>
+        <pre data-id="code-animation">
+          <code class="cpp" data-trim data-line-numbers="1 | 3 | 5-6">
+          cout << name_of_T&lt;std::string&gt;() << '\n';
+          // gcc prints
+          //   std::__cxx11::basic_string&lt;char>
+          // clang prints
+          //   std::__cxx11::basic_string&lt;char,
+          //     std::char_traits&lt;char>, std::allocator&lt;char>>
+        </code></pre>
+      </section>
+
+      <section>
+        <h2>Print types at compile time</h2>
+        <ul>
+          <li>Ivan Čukić mentions a nice trick to print a deduced type at compile time</li>
+          <li>Template declaration, no definition</li>
+          <li>Instantiation causes an error</li>
+          <li class="fragment fade-in">Downside: Generates an error and stops compilation</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Print types at compile time</h2>
+        <pre data-id="code-animation"><code class="cpp" data-trim data-line-numbers>
+          template&lt;typename T&gt;
+          class print_me_as_error;
+
+          print_me_as_error&lt;std::vector&lt;int&gt;::element_type&gt;();
+        </code></pre>
+        <pre class="fragment fade-in"><code class="text" data-trim data-line-numbers>
+          error: invalid use of incomplete type
+          'class print_me_as_error&lt;int&gt;'
+        </code></pre>
+      </section>
+
+      <section>
+        <h2>Print types at compile time</h2>
+        <ul>
+          <li class="fragment">Daniel Frey (of TAOCPP fame) uses another version of this technique</li>
+          <li class="fragment fade-in">constexpr value marked as deprecated!</li>
+          <li class="fragment fade-in">To instantiate it, use static_assert</li>
+          <li class="fragment fade-in">Generates warning and continues compiling</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Print types at compile time</h2>
+        <pre data-id="code-animation"><code class="cpp" data-trim data-line-numbers="1-2|4">
+          template&lt;typename T&gt;
+          [[deprecated]] constexpr bool print_type = true;
+
+          static_assert(print_type&lt;std::vector&lt;int&gt;::element_type&gt;);
+        </code></pre>
+        <pre class="fragment fade-in"><code class="text" data-trim data-line-numbers>
+          warning: 'print_type&lt;int&gt;' is deprecated
+                   [-Wdeprecated-declarations]
+          4 | static_assert(printType&lt;std::vector&lt;int&gt;::value_type&gt;);
+        </code></pre>
+      </section>
+
+      <section>
+        <h2>Code Insights</h2>
+        <ul>
+          <li>https://cppinsights.io/</li>
+          <li>Brainchild of Andreas Fertig</li>
+          <li>Like godbolt.org</li>
+          <li class="fragment fade-in">Generates simple C++ instead of assembler</li>
+          <li class="fragment fade-in">Shows range-based for loops</li>
+          <li class="fragment fade-in currentSection">Shows template instantiations</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Code Insights</h2>
+        <img class="r-stretch" src="img/cppInsights.png">
+      </section>
+
+      <section>
+        <h2>Metashell</h2>
+        <ul>
+          <li class="fragment">http://metashell.org</li>
+          <li class="fragment fade-in">A Meta-debugger!</li>
+          <li class="fragment fade-in">Complicated to set up</li>
+          <li class="fragment fade-in">Please someone make a web front end</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Metashell</h2>
+        <img class="r-stretch" src="img/metashell1.png">
+      </section>
+
+      <section>
+        <h2>MSGUI</h2>
+        <ul>
+          <li class="fragment">https://github.com/RangelReale/msgui</li>
+          <li class="fragment fade-in">Qt frontend for Metashell</li>
+          <li class="fragment fade-in">Looks cool</li>
+        </ul>
+      </section>
+
+      <section>
+        <img class="r-stretch" src="img/msgui.png">
+      </section>
+    </section>
+
+
+    <section>
+      <section>
+        <img class="r-stretch" src="img/alpacas2.jpg">
+      </section>
+
+      <section>
+        <h2>Agenda</h2>
+        <ul>
+          <li>Compiling</li>
+          <li>Debugging</li>
+          <li class="currentSection">Testing</li>
+          <li>Benchmarking</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Run-time tests</h2>
+        <pre>
+          <code class="cpp" data-trim data-line-numbers="1-5|7-9">
+            template&lt;typename T&gt;
+            requires std::integral&lt;T&gt;
+            constexpr T double_it(T x) {
+              return 2 * x;
+            }
+
+            TEST_CASE( "my template test" ) {
+              REQUIRE( double_it(3) == 6 );
+            }
+          </code>
+        </pre>
+      </section>
+
+      <section>
+        <h2>Compile-time tests</h2>
+        <ul>
+          <li class="fragment">Pre-2000 The Boost Static Assertion Library </li>
+          <li class="fragment fade-in">2002 Proposed by Robert Klarer and Dr. John Maddock</li>
+          <li class="fragment fade-in">C++11 introduced static_assert keyword</li>
+          <li class="fragment fade-in">static_assert(constexpr bool, "Error text")</li>
+          <li class="fragment fade-in">Generates an error if the bool expression evaluates to false</li>
+          <li class="fragment fade-in">C++17 made the error text optional</li>
+        </ul>
+        <pre class="fragment fade-in">
+          <code class="cpp" data-trim data-line-numbers="1">
+            static_assert( false, "Woops!!!" );
+          </code>
+        </pre>
+      </section>
+
+      <section>
+        <h2>static_assert in code</h2>
+        <pre>
+          <code class="cpp" data-trim data-line-numbers="1-5|7">
+            template&lt;typename T&gt;
+            requires std::integral&lt;T&gt;
+            constexpr T double_it(T x) {
+              return 2 * x;
+            }
+
+            static_assert( double_it(3) == 6,
+              "double_it should multiply by 2" );
+          </code>
+        </pre>
+      </section>
+
+      <section>
+        <h2>When to test at compile-time?</h2>
+
+        <ul>
+          <li class="fragment">To ensure a type keeps certain properties</li>
+          <li class="fragment fade-in">Often in if constexpr statements</li>
+          <li class="fragment fade-in">Generates an error closer to point of call</li>
+          <li class="fragment fade-in">Can reduce size of error messages</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Versioned data</h2>
+        <pre data-id="code-animation">
+          <code class="cpp" data-trim data-line-numbers="1 | 3-6 | 8-13">
+            template&lt;int&gt; struct Person;
+
+            template&lt;&gt;
+            struct Person&lt;0&gt; {
+              std::string firstName, lastName;
+            };
+
+            template&lt;&gt;
+            struct Person&lt;1&gt; {
+              std::string firstName, lastName;
+              int yob;
+              Person&lt;0&gt; migrateDown() const;
+            };
+          </code>
+        </pre>
+      </section>
+
+      <section data-auto-animate>
+        <h2 data-id="code-title">Versioned data</h2>
+        <pre data-id="code-animation">
+          <code class="cpp" data-trim data-line-numbers="1|2|3-4|5-6|8-9">
+            template&lt;int N&gt;
+            inline auto downgradeOnce (const Person&lt;N&gt;& newer) {
+              if constexpr (N == 0) {
+                  return newer;
+              } else if constexpr ( requires { newer.migrateDown(); }) {
+                  return newer.migrateDown();
+              } else {
+                  static_assert(false,
+                    "newer needs a migrateDown member function");
+              }
+            }
+          </code>
+        </pre>
+      </section>
+
+      <section data-auto-animate>
+        <h2 data-id="code-title">Versioned data</h2>
+        <pre data-id="code-animation">
+          <code class="cpp" data-trim data-line-numbers="8-9">
+            template&lt;int N&gt;
+            inline auto downgradeOnce (const Person&lt;N&gt;& newer) {
+              if constexpr (N == 0) {
+                  return newer;
+              } else if constexpr ( requires { newer.migrateDown(); }) {
+                  return newer.migrateDown();
+              } else {
+                  static_assert(always_false&lt;Person&lt;N&gt;&gt;,
+                    "The Person version of newer needs a migrateDown member function");
+              }
+            }
+          </code>
+        </pre>
+      </section>
+
+      <section>
+        <h2 data-id="code-title">always_false</h2>
+        <h6>https://en.cppreference.com/w/cpp/<br/>utility/variant/visit</h6>
+        <pre data-id="code-animation">
+          <code class="cpp" data-trim data-line-numbers="">
+            template&lt;typename T&gt;
+            constexpr inline bool always_false = false;
+          </code>
+        </pre>
+      </section>
+
+      <section>
+        <h2>Archetypes</h2>
+        <ul>
+          <li>Test classes that contain minimal behaviour</li>
+          <li class="fragment fade-in">Described in Chapter 28 of C++ Templates book</li>
+          <li class="fragment fade-in">Mentioned by David Abrahams and Douglas Gregor</li>
+          <li class="fragment fade-in">http://www.generic-programming.org/languages/<br/>cpp/techniques.html#archetypes</li>
+          <li class="fragment fade-in">Not quite superceded by C++20 concepts</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Archetypes</h2>
+        <ul>
+          <li>Blog by Andrzej Krzemieński</li>
+          <li class="fragment fade-in">https://akrzemi1.wordpress.com/2020/09/02/concept-archetypes</li>
+          <li class="fragment fade-in">https://akrzemi1.wordpress.com/2020/09/10/concept-archetypes-update</li>
+          <li class="fragment fade-in">https://akrzemi1.wordpress.com/2020/10/26/semantic-requirements-in-concepts</li>
+        </ul>
+      </section>
+
+      <section>
+        <img class="r-stretch" src="img/Andrzej1.png">
+      </section>
+      <section>
+        <img class="r-stretch" src="img/Andrzej2.png">
+      </section>
+      <section>
+        <img class="r-stretch" src="img/Andrzej3.png">
+      </section>
+
+      <section>
+        <h2>Archetypes for testing</h2>
+        <ul>
+          <li>Tiny classes</li>
+          <li>Delete functionality</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Creating Archetypes</h2>
+        <pre data-id="code-animation">
+          <code class="cpp" data-trim data-line-numbers="">
+            template&lt;typename T&gt;
+            int find(T const* array, int n, T const& value) {
+              int i = 0;
+              while ( i != n && array[i] != value)
+                ++i;
+              return i;
+            }
+          </code>
+        </pre>
+      </section>
+      <section data-auto-animate>
+        <h2>Creating Archetypes</h2>
+        <pre data-id="code-animation">
+          <code class="cpp" data-trim data-line-numbers="">
+            class EqualityComparableArchetype {
+            };
+
+            bool
+            operator==(EqualityComparableArchetype const&,
+                       EqualityComparableArchetype const&);
+          </code>
+        </pre>
+      </section>
+
+      <section data-auto-animate>
+        <h2>Creating Archetypes</h2>
+        <pre data-id="code-animation">
+          <code class="cpp" data-trim data-line-numbers="">
+            class EqualityComparableArchetype {
+            };
+
+            struct ConvertibleToBoolArchetype {
+              operator bool() const;
+            };
+
+            ConvertibleToBoolArchetype
+            operator==(EqualityComparableArchetype const&,
+                       EqualityComparableArchetype const&);
+          </code>
+        </pre>
+      </section>
+      <section>
+        <h2>Creating Archetypes</h2>
+        <pre data-id="code-animation">
+          <code class="cpp" data-trim data-line-numbers="">
+            template int find(
+                EqualityComparableArchetype const* array, int n,
+                EqualityComparableArchetype const& value);
+          </code>
+        </pre>
+      </section>
+      <section>
+        <h2>Creating Archetypes</h2>
+        <pre data-id="code-animation">
+          <code class="txt" data-trim data-line-numbers="">
+            In instantiation of 'int find(const T*, int, const T&) [with T = EqualityComparableArchetype]':
+            21:45:   required from here
+            4:32: error: return type of 'ConvertibleToBoolArchetype operator==(const EqualityComparableArchetype&, const EqualityComparableArchetype&)' is not 'bool'
+            4 |     while ( i != n && array[i] != value)
+            |                       ~~~~~~~~~^~~~~~~~
+            4:32: note: used as rewritten candidate for comparison of 'const EqualityComparableArchetype' and 'const EqualityComparableArchetype'
+          </code>
+        </pre>
+      </section>
+      <section>
+        <h2>Creating Archetypes</h2>
+        <pre data-id="code-animation">
+          <code class="cpp" data-trim data-line-numbers="">
+            template&lt;typename T&gt;
+            int find(T const* array, int n, T const& value) {
+              int i = 0;
+              while ( i != n && !(array[i] == value))
+                ++i;
+              return i;
+            }
+          </code>
+        </pre>
+      </section>
+    </section>
+
+
+    <section>
+      <section>
+        <img class="r-stretch" src="img/alpacas3.jpg">
+      </section>
+
+      <section>
+        <h2>Agenda</h2>
+        <ul>
+          <li>Compiling</li>
+          <li>Debugging</li>
+          <li>Testing</li>
+          <li class="currentSection">Benchmarking</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Benchmarking</h2>
+        <ul>
+          <li>Optimizing template code</li>
+          <li>Comparing build times</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Tracers</h2>
+        <ul>
+          <li class="fragment">Described in chapter 28 of C++ Templates book</li>
+          <li class="fragment fade-in">Can test quality of implementation</li>
+          <li class="fragment fade-in">Count calls to particular functions</li>
+          <li class="fragment fade-in">Found in libstdc++ test code</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Tracers</h2>
+        <pre data-id="code-animation">
+          <code class="cpp" data-trim data-line-numbers="2|3|4|5|6|7">
+            struct TracedItem {
+              inline static int def_ctors = 0;
+              inline static int copy_ctors = 0;
+              inline static int move_ctors = 0;
+              TracedItem() { ++def_ctors; }
+              TracedItem(const TracedItem&) { ++copy_ctors; }
+              TracedItem(TracedItem&&) noexcept { ++move_ctors; }
+            };
+          </code>
+        </pre>
+      </section>
+
+      <section>
+        <h2>Tracers</h2>
+        <pre data-id="code-animation">
+          <code class="cpp" data-trim data-line-numbers="3|4|5">
+            int main() {
+              std::vector&lt;TracedItem&gt; items;
+              items.emplace_back();             // 1 def
+              items.push_back(TracedItem{});    // 1 def + 1 move
+              items.emplace_back(TracedItem{}); // 1 def + 1 move
+
+              std::cout << "default ctors " << TracedItem::def_ctors
+                        << "\ncopy ctors " << TracedItem::copy_ctors
+                        << "\nmove ctors " << TracedItem::move_ctors << '\n';
+              return 0;
+            }
+          </code>
+        </pre>
+        <p class="fragment highlight currentSection">No copy ctors were harmed in making this example!</p>
+      </section>
+
+      <section>
+        <h2>Comparing build times</h2>
+        <ul>
+          <li class="fragment">Compiler flags</li>
+          <li class="fragment fade-in">Microsoft Visual Studio Build Insights</li>
+          <li class="fragment fade-in">build-bench.com</li>
+          <li class="fragment fade-in">metaBench tool</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>gcc & Clang -ftime-report</h2>
+        <pre>
+          <code data-trim data-line-numbers="12-14">
+            Time variable                 usr               GGC
+            phase setup               : 0.00 (  0%)    1505 kB (  2%)
+            phase parsing             : 0.59 ( 83%)   63979 kB ( 81%)
+            phase lang. deferred      : 0.06 (  8%)    7268 kB (  9%)
+            phase opt and generate    : 0.06 (  8%)    6136 kB (  8%)
+            |name lookup              : 0.10 ( 14%)    2262 kB (  3%)
+            |overload resolution      : 0.17 ( 24%)   19631 kB ( 25%)
+            callgraph construction    : 0.01 (  1%)    2209 kB (  3%)
+            callgraph optimization    : 0.01 (  1%)       0 kB (  0%)
+            callgraph ipa passes      : 0.01 (  1%)     328 kB (  0%)
+            preprocessing             : 0.11 ( 15%)    1504 kB (  2%)
+            template instantiation    : 0.25 ( 35%)   25293 kB ( 32%)
+            constant expr. evaluation : 0.01 (  1%)     113 kB (  0%)
+            constraint satisfaction   : 0.02 (  3%)    2570 kB (  3%)
+            TOTAL                     : 0.71          79097 kB
+          </code>
+        </pre>
+      </section>
+      <section>
+        <h2>gcc -fmem-report</h2>
+        <pre>
+          <code data-trim>
+            Number of expanded macros:                      6059
+            Average number of tokens per macro expansion:      3
+
+            Line Table allocations during the compilation process
+            Number of ordinary maps used:          500
+            Ordinary map used size:                 11k
+            Number of ordinary maps allocated:     682
+            Ordinary maps allocated size:           15k
+            Number of macro maps used:            5965
+            Macro maps used size:                  186k
+            Macro maps locations size:             183k
+            Macro maps size:                       369k
+            Duplicated maps locations size:         75k
+            Total allocated maps size:             455k
+            Total used maps size:                  381k
+            Ad-hoc table size:                     768k
+            Ad-hoc table entries used:              21k
+            optimized_ranges:                      276k
+            unoptimized_ranges:                     23k
+          </code>
+        </pre>
+      </section>
+
+      <section>
+        <h2>MS Build Insights</h2>
+        <img class="r-stretch" src="img/MSBuildInsights.png">
+      </section>
+
+      <section>
+        <h2>build-bench.com</h2>
+        <ul>
+          <li class="fragment">Created by Fred Tingaud</li>
+          <li class="fragment fade-in">Like godbolt.org</li>
+          <li class="fragment fade-in">Add 2 or more versions of an application</li>
+          <li class="fragment fade-in">Graphs compilation time and process size</li>
+        </ul>
+      </section>
+      <section>
+        <img class="r-stretch" src="img/BuildBench1.png">
+      </section>
+      <section>
+        <img class="r-stretch" src="img/BuildBench4.png">
+      </section>
+      <section>
+        <img class="r-stretch" src="img/BuildBench3.png">
+      </section>
+      <section>
+        <img class="r-stretch" src="img/BuildBench2.png">
+      </section>
+
+      <section>
+        <h2>Metabench</h2>
+        <ul>
+          <li class="fragment">https://github.com/ldionne/metabench</li>
+          <li class="fragment fade-in">Times versions of your program</li>
+          <li class="fragment fade-in">Uses ruby</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Metabench</h2>
+        <img class="r-stretch" src="img/odinRecommends.png">
+      </section>
+      <section>
+        <h2>Metabench CMakeLists.txt</h2>
+        <pre>
+          <code data-trim data-line-numbers="2|5|8-9|12">
+            # Make sure Metabench can be found when writing include(metabench)
+            list(APPEND CMAKE_MODULE_PATH "../metabench")
+
+            # Actually include the module
+            include(../metabench/metabench.cmake)
+
+            # Add new datasets
+            metabench_add_dataset(sortUnique "sortUnique.cpp.erb" "(1..40).to_a")
+            metabench_add_dataset(handRolled "handRolled.cpp.erb" "(1..40).to_a")
+
+            # Add a new chart
+            metabench_add_chart(chart DATASETS sortUnique handRolled)
+          </code>
+        </pre>
+      </section>
+
+      <section data-auto-animate>
+        <h2>eRuby files</h2>
+        <pre>
+          <code class="cpp" data-trim data-line-numbers="1|3">
+            #if defined(METABENCH)
+            static auto tup1 = std::make_tuple(
+              &lt;%= (1..n).to_a.reverse.join(', ') %&gt;
+            );
+            #endif
+          </code>
+        </pre>
+      </section>
+
+      <section data-auto-animate>
+        <h2>eRuby files</h2>
+        <pre>
+          <code class="cpp" data-trim data-line-numbers="1|3">
+            #if defined(METABENCH)
+            static auto tup1 = std::make_tuple(
+              10, 9, 8, 7, 6, 5, 4, 3, 2, 1
+            );
+            #endif
+          </code>
+        </pre>
+      </section>
+      <section>
+        <pre data-trim>
+/home/joconnor/bin/clion-203.4818.55/bin/cmake/linux/bin/cmake --build /home/joconnor/projects/cpp/talks/Shenanigans/cmake-build-debug --target chart -- -j 6
+[ 33%] Generating handRolled.json
+[ 66%] Generating sortUnique.json
+==> 2% (0.0s) dataset1.cpp.erb (n = 1)/home/joconnor/.rvm/rubies/ruby-2.6.1/lib/ruby/2.6.0/open3.rb:213: warning: Insecure world writable dir /opt in PATH, mode 040777
+==> 2% (0.0s) handrolled.cpp.erb (n = 1)/home/joconnor/.rvm/rubies/ruby-2.6.1/lib/ruby/2.6.0/open3.rb:213: warning: Insecure world writable dir /opt in PATH, mode 040777
+==> 100% (30.1s) handrolled.cpp.erb (n = 40)
+==> 100% (30.16s) dataset1.cpp.erb (n = 40)
+Generating chart.html
+Built target chart
+        </pre>
+      </section>
+
+      <section>
+        <img class="r-stretch" src="img/MetaBenchChart.png">
+      </section>
+    </section>
+
+    <section>
+      <section>
+        <img class="r-stretch" src="img/alpacas4.jpg">
+      </section>
+      <section>
+        <h2>Conclusions: Compiling</h2>
+        <ul>
+          <li>Read the error message</li>
+          <li>Get your editor to format the declaration</li>
+          <li>Use Camomilla to simplify the error messages</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Conclusions: Debugging</h2>
+        <ul>
+          <li>The normal debugger can handle constexpr functions</li>
+          <li>Print a deduced type using deprecated trick</li>
+          <li>Code Insights is a great tool</li>
+          <li>Meta-debugging with Metashell and MSGUI</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Conclusions: Testing</h2>
+        <ul>
+          <li>Unit tests still work</li>
+          <li>static_assert</li>
+          <li>Remember the always_false template trick</li>
+          <li>Archtypes can test templates and concepts</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Conclusions: Benchmarking</h2>
+        <ul>
+          <li>Tracer types to count function calls</li>
+          <li>Compile-time Benchmarking</li>
+          <li>build-bench.com</li>
+          <li>metabench CMake module</li>
+        </ul>
+      </section>
+    </section>
+    <section>
+      <h2>PS</h2>
+      <ul>
+        <li>Stack Overflow</li>
+        <li>#include discord server</li>
+        <li>godbolt.org</li>
+      </ul>
+    </section>
+    <section>
+      <h3>The End</h3>
+      <img class="r-stretch" src="img/AlpacasEnd2.gif">
+    </section>
+  </section>
+</div>
+<script src="dist/reveal.js"></script>
+<script src="plugin/notes/notes.js"></script>
+<script src="plugin/markdown/markdown.js"></script>
+<script src="plugin/highlight/highlight.js"></script>
+<script>
+  // More info about initialization & config:
+  // - https://revealjs.com/initialization/
+  // - https://revealjs.com/config/
+  Reveal.initialize({
+    hash: true,
+    width: 1200,
+    slideNumber: 'c/t',
+
+    // Learn about plugins: https://revealjs.com/plugins/
+    plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+  });
+</script>
+</body>
+</html>

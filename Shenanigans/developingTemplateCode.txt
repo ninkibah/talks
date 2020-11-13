@@ -1,0 +1,48 @@
+Delaying static asserts: Code found in cereal serialization library:
+
+template <class T>
+struct delay_static_assert : std::false_type {};
+
+Using it only when you know you want trigger an assertion failure:
+
+template <class InputArchive>
+struct get_output_from_input : no
+{
+    static_assert( detail::delay_static_assert<InputArchive>::value,
+                    "Could not find an associated output archive for input archive." );
+};
+Documentation found here: https://uscilab.github.io/cereal/assets/doxygen/structcereal_1_1traits_1_1detail_1_1delay__static__assert.html
+This works because at the point of usage, we know we want to emit an error message, but only for the given instantiation.
+If we just wrote static_assert( false, "some message"); the compiler would complain as soon as it sees that line. By passing the type to
+a template function we can prevent the compiler from knowing whether value is true or false.
+
+
+Ivan Cukic in his book "Functional Programming in C++" on page 229, mentions a useful way of printing the type of something during complilation:
+
+template <typename T>
+class error;
+
+Then we try to instatiate error for a given type:
+error<std::remove_cv_ref_t<const int&>>();
+
+And this generates an error message as we haven't defined what the error class is.
+
+However, there is a further trick that allows us to continue the build without stopping the build: we mark a templated constexpr value as deprecated.
+Useful deprecated printType<T> boolean constexpr takes advantage of the compiler issuing warnings about deprecated variables.
+Sometimes that's not enough:
+I wanted to see how big the file position was that comes back from an ifstream::tellg() function.
+static_assert(printType<std::fpos<__mbstate_t> >);
+Produces the following:
+static_assert(printType<decltype(istr.tellg())>);
+snapshot.cpp:109:23: warning: ‘printType<std::fpos<__mbstate_t> >’ is deprecated ://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated-declarationsWdeprecated-declarations[
+
+I thought if I called printType with the result std::fpos<__mbstate_t> I might get more information, but it just came back with the same type.
+It turned out that std::fpos<__mbstate_t> has a conversion operator that was getting called. It returns a streampos which is a long!
+
+
+Be careful. Sometimes you can't find out the type of a declaration. The compiler will tell you the type is ambiguous.
+I had a case where I was doing:
+someVector.insert(someString);
+I tried getting the type of somestring, and it failed. The error turned out to be because vectors don't have an insert method.
+So you can't turn off your brain completely.
+

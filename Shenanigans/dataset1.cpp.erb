@@ -1,0 +1,22 @@
+#include <tuple>
+
+/*
+template<int ... IDS>
+using IdSequence = std::integer_sequence<int, IDS...>;
+
+template<int ... IDS>
+constexpr bool areAllUnique(IdSequence<IDS...>) {
+  std::array arr{IDS...};
+  std::sort(arr.begin(), arr.end());
+  return std::unique(arr.begin(), arr.end()) == arr.end();
+}
+*/
+#if defined(METABENCH)
+static auto tup1 = std::make_tuple(
+  <%= (1..n).to_a.reverse.join(', ') %>
+);
+#endif
+
+int main() {
+    return 0;
+}
